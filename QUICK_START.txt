@@ -1,0 +1,174 @@
+=============================================
+  AuthentiX - Quick Start Guide
+=============================================
+
+🚀 GET STARTED IN 5 MINUTES:
+
+1️⃣ BACKEND (Terminal 1):
+   cd backend
+   python -m venv venv
+   venv\Scripts\activate          (Windows)
+   pip install -r requirements.txt
+   copy .env.example .env
+   python main.py
+   
+   ✓ Server: http://localhost:8000
+   ✓ API Docs: http://localhost:8000/docs
+
+2️⃣ FRONTEND (Terminal 2):
+   npm install
+   copy .env.example .env
+   (Edit .env with Supabase credentials)
+   npm run dev
+   
+   ✓ App: http://localhost:5173
+
+3️⃣ ARDUINO:
+   - Open: arduino/authentix_ble/authentix_ble.ino
+   - Board: Arduino Nano 33 BLE Rev2
+   - Upload firmware
+   - Check Serial Monitor: "BLE peripheral is now advertising"
+
+4️⃣ TEST IT:
+   - Open http://localhost:5173
+   - Sign up
+   - Enroll biometrics
+   - Connect Arduino
+   - Authenticate!
+
+=============================================
+📱 AUTHENTICATION METHODS:
+
+👤 Face Recognition
+   - Python: FAISS + OpenCV
+   - Threshold: 0.6
+   - Endpoint: /face/enroll, /face/verify
+
+🎙️ Voice Recognition  
+   - Python: Librosa MFCC
+   - Threshold: 0.75
+   - Endpoint: /voice/enroll, /voice/verify
+
+✋ Gesture Recognition
+   - Arduino: IMU (Accel + Gyro)
+   - Algorithm: DTW
+   - Threshold: 0.70
+   - Endpoint: /gesture/enroll, /gesture/verify
+
+🔢 PIN Authentication
+   - Storage: SHA-256 hash
+   - Length: 4-6 digits
+   - Max attempts: 3
+
+🌡️ Environmental Sensors
+   - Temperature (°C)
+   - Humidity (%)
+   - Update: Every 2 seconds
+
+=============================================
+🔗 BLUETOOTH CONNECTION:
+
+Service UUIDs:
+- Environmental: 181A
+  - Temperature: 2A6E
+  - Humidity: 2A6F
+  
+- IMU: 19B10000-E8F2-537E-4F6C-D104768A1214
+  - Accel: 19B10001-E8F2-537E-4F6C-D104768A1214
+  - Gyro: 19B10002-E8F2-537E-4F6C-D104768A1214
+  
+- Voice: 19B10010-E8F2-537E-4F6C-D104768A1214
+  - Data: 19B10011-E8F2-537E-4F6C-D104768A1214
+
+Device Name: "AuthentiX-BLE"
+
+=============================================
+📂 PROJECT STRUCTURE:
+
+backend/
+├── main.py              # FastAPI server
+├── services/
+│   ├── face_service.py   # FAISS face recognition
+│   ├── voice_service.py  # Voice authentication
+│   └── gesture_service.py # Gesture recognition
+├── data/                 # Embeddings storage
+└── requirements.txt      # Python dependencies
+
+src/
+├── components/auth/      # Auth UI components
+├── hooks/               # React hooks
+│   ├── useBluetooth.ts  # BLE connection
+│   ├── usePythonAPI.ts  # Backend API
+│   └── useAuth.ts       # User auth
+└── pages/               # App pages
+
+arduino/authentix_ble/
+└── authentix_ble.ino    # BLE firmware
+
+=============================================
+🛠️ TROUBLESHOOTING:
+
+❌ Backend won't start
+   → Check Python 3.9+
+   → pip install -r requirements.txt
+   → Port 8000 not in use
+
+❌ Frontend CORS error
+   → Backend must be running
+   → Check VITE_PYTHON_API_URL in .env
+
+❌ Arduino not connecting
+   → Use Chrome/Edge browser
+   → Enable Bluetooth
+   → Check firmware uploaded
+   → Device name: "AuthentiX-BLE"
+
+❌ No sensor data
+   → Arduino connected?
+   → Check Serial Monitor
+   → BLE services advertising?
+
+=============================================
+📊 API ENDPOINTS:
+
+GET  /                   Health check
+POST /face/enroll       Enroll face
+POST /face/verify       Verify face
+POST /voice/enroll      Enroll voice
+POST /voice/verify      Verify voice
+POST /gesture/enroll    Enroll gesture
+POST /gesture/verify    Verify gesture
+
+Full docs: http://localhost:8000/docs
+
+=============================================
+🔐 SECURITY:
+
+✓ PIN: SHA-256 hashed
+✓ BLE: Secure pairing
+✓ API: CORS protected
+✓ Database: RLS enabled
+✓ Sessions: Supabase JWT
+
+=============================================
+📱 FLUTTER READY:
+
+This backend supports Flutter apps:
+- Same API endpoints
+- BLE UUIDs documented
+- Shared Supabase auth
+- Cross-platform compatible
+
+Flutter packages needed:
+- flutter_blue_plus
+- http / dio
+- supabase_flutter
+
+=============================================
+
+Need help? Check:
+- SETUP.txt (detailed guide)
+- TESTING_CHECKLIST.txt
+- http://localhost:8000/docs
+
+Happy authenticating! 🔐✨

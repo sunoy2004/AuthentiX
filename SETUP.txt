@@ -1,0 +1,265 @@
+==============================================
+AuthentiX - Multi-Modal Authentication System
+Hybrid Setup Guide (React + Python + Arduino)
+==============================================
+
+SYSTEM OVERVIEW:
+---------------
+✓ React Web App (Frontend) - Current implementation
+✓ Python FastAPI Backend - FAISS-based authentication
+✓ Arduino BLE 33 Rev2 - Sensors & IMU data
+✓ Supabase - User & session management
+✓ Ready for Flutter mobile app integration
+
+==============================================
+PART 1: PYTHON BACKEND SETUP
+==============================================
+
+1. Navigate to backend directory:
+   cd backend
+
+2. Create Python virtual environment:
+   python -m venv venv
+
+3. Activate virtual environment:
+   Windows: venv\Scripts\activate
+   Mac/Linux: source venv/bin/activate
+
+4. Install dependencies:
+   pip install -r requirements.txt
+
+5. Create .env file:
+   copy .env.example .env
+   (Edit .env if needed)
+
+6. Create data directories:
+   mkdir data
+   mkdir data\face
+   mkdir data\voice
+   mkdir data\gesture
+
+7. Run the backend server:
+   python main.py
+
+   Server will start at: http://localhost:8000
+   API Docs available at: http://localhost:8000/docs
+
+==============================================
+PART 2: REACT FRONTEND SETUP
+==============================================
+
+1. Install Node.js dependencies:
+   npm install
+
+2. Create .env file in root:
+   copy .env.example .env
+
+3. Configure .env with your Supabase credentials:
+   VITE_PYTHON_API_URL=http://localhost:8000
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_key
+
+4. Run development server:
+   npm run dev
+
+   App will start at: http://localhost:5173
+
+==============================================
+PART 3: ARDUINO SETUP (BLE 33 Rev2)
+==============================================
+
+1. Install Arduino IDE 2.x
+   Download: https://www.arduino.cc/en/software
+
+2. Install required libraries:
+   - ArduinoBLE
+   - Arduino_LSM6DSOX
+
+   In Arduino IDE:
+   Tools > Manage Libraries > Search and install above
+
+3. Open firmware:
+   File > Open > arduino/authentix_ble/authentix_ble.ino
+
+4. Select board:
+   Tools > Board > Arduino Mbed OS Nano Boards > Arduino Nano 33 BLE Rev2
+
+5. Select port:
+   Tools > Port > (Select your Arduino port)
+
+6. Upload firmware:
+   Click Upload button
+
+7. Verify Arduino is advertising:
+   - LED should be blinking
+   - Serial Monitor (115200 baud) shows "BLE peripheral is now advertising"
+
+==============================================
+PART 4: SUPABASE DATABASE SETUP
+==============================================
+
+Required tables (already in migrations):
+
+1. auth_methods
+   - user_id (uuid, FK to auth.users)
+   - method_type (text: face, voice, gesture, pin)
+   - is_enrolled (boolean)
+   - last_used (timestamp)
+
+2. auth_attempts
+   - user_id (uuid, FK to auth.users)
+   - method_type (text)
+   - success (boolean)
+   - confidence (numeric)
+   - timestamp (timestamp)
+
+3. pins
+   - user_id (uuid, FK to auth.users, unique)
+   - pin_hash (text)
+   - created_at (timestamp)
+
+Run migrations:
+   cd supabase
+   supabase db push
+
+==============================================
+PART 5: TESTING THE SYSTEM
+==============================================
+
+1. Start Python backend (terminal 1):
+   cd backend
+   python main.py
+
+2. Start React app (terminal 2):
+   npm run dev
+
+3. Upload Arduino firmware (if not done)
+
+4. Test workflow:
+   a. Open http://localhost:5173
+   b. Sign up for an account
+   c. Navigate to enrollment page
+   d. Connect Arduino via Bluetooth
+   e. Enroll biometric methods:
+      - Face: Capture photo
+      - Voice: Record audio
+      - Gesture: Perform gesture with Arduino
+      - PIN: Set 4-6 digit PIN
+   f. Go to Dashboard
+   g. View sensor data (temperature/humidity)
+   h. Test authentication
+
+==============================================
+BLUETOOTH CONNECTION
+==============================================
+
+Browser Requirements:
+- Chrome, Edge, or Opera (WebBluetooth support)
+- HTTPS or localhost only
+- Enable Bluetooth on device
+
+Connection Steps:
+1. Click "Connect Arduino" in Dashboard
+2. Browser shows device picker
+3. Select "AuthentiX-BLE"
+4. Grant permission
+5. Connection established
+6. Real-time sensor data displays
+
+==============================================
+API ENDPOINTS
+==============================================
+
+Face Authentication:
+  POST /face/enroll   - Enroll face
+  POST /face/verify   - Verify face
+
+Voice Authentication:
+  POST /voice/enroll  - Enroll voice
+  POST /voice/verify  - Verify voice
+
+Gesture Authentication:
+  POST /gesture/enroll - Enroll gesture
+  POST /gesture/verify - Verify gesture
+
+Health Check:
+  GET /               - System status
+
+==============================================
+TROUBLESHOOTING
+==============================================
+
+Backend not starting:
+- Check Python version (3.9+)
+- Verify all dependencies installed
+- Check port 8000 is not in use
+
+Frontend CORS errors:
+- Verify PYTHON_API_URL in .env
+- Check backend CORS settings
+- Ensure backend is running
+
+Arduino not connecting:
+- Check device name is "AuthentiX-BLE"
+- Verify firmware uploaded successfully
+- Use compatible browser (Chrome/Edge)
+- Check Bluetooth is enabled
+
+No sensor data:
+- Verify Arduino is connected
+- Check Serial Monitor for errors
+- Ensure BLE services are advertising
+
+==============================================
+FUTURE FLUTTER APP INTEGRATION
+==============================================
+
+The backend is ready for Flutter:
+1. Use same API endpoints
+2. Implement BLE connection in Flutter
+3. Share Supabase authentication
+4. Add cross-platform persistence
+
+Flutter BLE packages:
+- flutter_blue_plus
+- flutter_reactive_ble
+
+==============================================
+SECURITY NOTES
+==============================================
+
+- PIN stored as SHA-256 hash
+- BLE uses secure pairing
+- HTTPS required for production
+- FAISS embeddings encrypted at rest
+- Rate limiting on auth attempts
+- Session management via Supabase
+
+==============================================
+PROJECT STRUCTURE
+==============================================
+
+kinetic-auth-main/
+├── backend/                # Python FastAPI
+│   ├── services/          # Auth services
+│   ├── data/              # FAISS databases
+│   ├── main.py           # API server
+│   └── requirements.txt  # Dependencies
+├── arduino/               # Arduino firmware
+│   └── authentix_ble/    # BLE 33 Rev2 code
+├── src/                   # React frontend
+│   ├── components/       # UI components
+│   ├── hooks/            # Custom hooks
+│   ├── pages/            # App pages
+│   └── integrations/     # Supabase client
+└── supabase/             # Database migrations
+
+==============================================
+
+For questions or issues:
+- Check API docs: http://localhost:8000/docs
+- Review browser console for errors
+- Check Arduino Serial Monitor
+- Verify all services are running
+
+Happy authenticating! 🔐🚀

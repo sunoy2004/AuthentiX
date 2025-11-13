@@ -1,0 +1,365 @@
+===============================================
+AuthentiX - Testing & Verification Checklist
+===============================================
+
+PRE-FLIGHT CHECKS:
+-----------------
+[  ] Python 3.9+ installed
+[  ] Node.js 18+ installed
+[  ] Arduino IDE 2.x installed
+[  ] Chrome/Edge browser (WebBluetooth support)
+[  ] Arduino Nano BLE 33 Rev2 available
+[  ] Supabase project created
+
+===============================================
+BACKEND SETUP VERIFICATION:
+===============================================
+
+[  ] 1. Virtual environment created
+     Command: cd backend && python -m venv venv
+
+[  ] 2. Dependencies installed
+     Command: pip install -r requirements.txt
+     Verify: No errors during installation
+
+[  ] 3. .env file configured
+     Check: backend/.env exists with valid settings
+
+[  ] 4. Data directories created
+     Check: backend/data/ exists
+     Check: backend/data/face/ exists
+     Check: backend/data/voice/ exists
+     Check: backend/data/gesture/ exists
+
+[  ] 5. Server starts successfully
+     Command: python main.py
+     Expected: "Uvicorn running on http://0.0.0.0:8000"
+
+[  ] 6. API health check responds
+     Test: Open http://localhost:8000/
+     Expected: {"status":"healthy","timestamp":"...","services":{...}}
+
+[  ] 7. API docs accessible
+     Test: Open http://localhost:8000/docs
+     Expected: FastAPI Swagger UI loads
+
+[  ] 8. CORS configured correctly
+     Check: Frontend origin in CORS_ORIGINS
+
+===============================================
+FRONTEND SETUP VERIFICATION:
+===============================================
+
+[  ] 1. Dependencies installed
+     Command: npm install
+     Verify: node_modules/ directory created
+
+[  ] 2. .env file configured
+     Check: .env exists in root
+     Verify: VITE_PYTHON_API_URL=http://localhost:8000
+     Verify: VITE_SUPABASE_URL set
+     Verify: VITE_SUPABASE_ANON_KEY set
+
+[  ] 3. Supabase migrations applied
+     Command: Check supabase dashboard
+     Verify: Tables exist: profiles, authentication_methods, authentication_logs, pins
+
+[  ] 4. Dev server starts
+     Command: npm run dev
+     Expected: "Local: http://localhost:5173"
+
+[  ] 5. App loads in browser
+     Test: Open http://localhost:5173
+     Expected: Home page displays
+
+[  ] 6. Navigation works
+     Test: Click through pages
+     Expected: No console errors
+
+===============================================
+ARDUINO SETUP VERIFICATION:
+===============================================
+
+[  ] 1. Libraries installed
+     Required: ArduinoBLE, Arduino_LSM6DSOX
+     Verify: Tools > Manage Libraries
+
+[  ] 2. Board selected
+     Check: Tools > Board > Arduino Nano 33 BLE Rev2
+
+[  ] 3. Port selected
+     Check: Tools > Port > (Arduino port)
+
+[  ] 4. Firmware uploads successfully
+     File: arduino/authentix_ble/authentix_ble.ino
+     Expected: "Done uploading"
+
+[  ] 5. Serial monitor shows activity
+     Baud: 115200
+     Expected: "BLE peripheral is now advertising"
+     Expected: Device name: "AuthentiX-BLE"
+
+[  ] 6. LED indicator working
+     Check: Onboard LED blinks/lights up
+
+===============================================
+AUTHENTICATION FLOW TESTING:
+===============================================
+
+USER REGISTRATION:
+-----------------
+[  ] 1. Navigate to /auth?mode=signup
+[  ] 2. Enter email and password
+[  ] 3. Create account successfully
+[  ] 4. Redirected to enrollment page
+
+ENROLLMENT - FACE:
+-----------------
+[  ] 1. Click "Enroll Face"
+[  ] 2. Grant camera permission
+[  ] 3. Camera feed displays
+[  ] 4. Capture photo
+[  ] 5. Photo preview shows
+[  ] 6. Submit to backend
+[  ] 7. Success message: "Face enrolled successfully"
+[  ] 8. Check backend: data/face/ has files
+
+ENROLLMENT - VOICE:
+-----------------
+[  ] 1. Click "Enroll Voice"
+[  ] 2. Grant microphone permission
+[  ] 3. Recording starts
+[  ] 4. Speak for 3 seconds
+[  ] 5. Recording completes
+[  ] 6. Submit to backend
+[  ] 7. Success message: "Voice enrolled successfully"
+[  ] 8. Check backend: data/voice/ has files
+
+ENROLLMENT - GESTURE:
+-------------------
+[  ] 1. Connect Arduino via Bluetooth
+[  ] 2. Browser shows device picker
+[  ] 3. Select "AuthentiX-BLE"
+[  ] 4. Connection successful
+[  ] 5. Click "Enroll Gesture"
+[  ] 6. Perform gesture with Arduino
+[  ] 7. IMU data captured
+[  ] 8. Submit to backend
+[  ] 9. Success message: "Gesture enrolled successfully"
+[  ] 10. Check backend: data/gesture/ has files
+
+ENROLLMENT - PIN:
+---------------
+[  ] 1. Click "Enroll PIN"
+[  ] 2. Enter 4-6 digit PIN
+[  ] 3. Re-enter PIN to confirm
+[  ] 4. PINs match
+[  ] 5. Submit to database
+[  ] 6. Success message: "PIN enrolled successfully"
+[  ] 7. Check Supabase: pins table has entry
+
+VERIFICATION - FACE:
+------------------
+[  ] 1. Navigate to /authenticate
+[  ] 2. Select Face authentication
+[  ] 3. Capture new photo
+[  ] 4. Backend verifies successfully
+[  ] 5. Confidence score displayed
+[  ] 6. Authentication log created
+
+VERIFICATION - VOICE:
+-------------------
+[  ] 1. Select Voice authentication
+[  ] 2. Record new audio sample
+[  ] 3. Backend verifies successfully
+[  ] 4. Confidence score displayed
+[  ] 5. Authentication log created
+
+VERIFICATION - GESTURE:
+---------------------
+[  ] 1. Ensure Arduino connected
+[  ] 2. Select Gesture authentication
+[  ] 3. Perform same gesture
+[  ] 4. Backend verifies successfully
+[  ] 5. Confidence score displayed
+[  ] 6. Authentication log created
+
+VERIFICATION - PIN:
+-----------------
+[  ] 1. Select PIN authentication
+[  ] 2. Enter correct PIN
+[  ] 3. PIN verified successfully
+[  ] 4. Authentication log created
+
+FAILED ATTEMPTS:
+--------------
+[  ] 1. Try wrong PIN
+[  ] 2. Attempts counter decrements
+[  ] 3. Locked after 3 attempts
+[  ] 4. Error logged in database
+
+===============================================
+BLUETOOTH/ARDUINO TESTING:
+===============================================
+
+[  ] 1. Dashboard shows "Connect Arduino" button
+[  ] 2. Click button, device picker appears
+[  ] 3. "AuthentiX-BLE" visible in list
+[  ] 4. Select and pair successfully
+[  ] 5. Connection status shows "Connected"
+[  ] 6. Temperature reading displays
+[  ] 7. Humidity reading displays
+[  ] 8. Readings update every 2 seconds
+[  ] 9. Move Arduino, gesture data changes
+[  ] 10. Disconnect button works
+[  ] 11. Reconnection works
+
+SENSOR DATA VALIDATION:
+---------------------
+[  ] 1. Temperature in reasonable range (15-35°C)
+[  ] 2. Humidity in reasonable range (20-80%)
+[  ] 3. Accelerometer values change with movement
+[  ] 4. Gyroscope values change with rotation
+[  ] 5. Timestamp updates correctly
+
+===============================================
+BACKEND API TESTING:
+===============================================
+
+Using http://localhost:8000/docs:
+
+[  ] 1. Health check (GET /)
+     Expected: 200 OK, status: healthy
+
+[  ] 2. Face enrollment (POST /face/enroll)
+     Upload: Image file
+     Expected: {"success":true,"message":"..."}
+
+[  ] 3. Face verification (POST /face/verify)
+     Upload: Image file
+     Expected: {"success":true,"match":true/false,"confidence":0.xx}
+
+[  ] 4. Voice enrollment (POST /voice/enroll)
+     Upload: Audio file
+     Expected: {"success":true}
+
+[  ] 5. Voice verification (POST /voice/verify)
+     Upload: Audio file
+     Expected: {"success":true,"match":true/false}
+
+[  ] 6. Gesture enrollment (POST /gesture/enroll)
+     Body: {user_id, gesture_sequence}
+     Expected: {"success":true}
+
+[  ] 7. Gesture verification (POST /gesture/verify)
+     Body: {user_id, gesture_sequence}
+     Expected: {"success":true,"match":true/false}
+
+===============================================
+DATABASE TESTING:
+===============================================
+
+[  ] 1. User profile created on signup
+     Table: profiles
+     Check: User record exists
+
+[  ] 2. Auth methods tracked
+     Table: authentication_methods
+     Check: 4 records per user (face, voice, gesture, pin)
+
+[  ] 3. Enrollment status updated
+     Check: is_enrolled = true after enrollment
+
+[  ] 4. Auth attempts logged
+     Table: authentication_logs
+     Check: Logs created on verify attempts
+
+[  ] 5. PIN hash stored securely
+     Table: pins
+     Check: pin_hash is SHA-256 (64 chars hex)
+
+[  ] 6. RLS policies working
+     Test: User can only see own data
+
+===============================================
+ERROR HANDLING TESTING:
+===============================================
+
+[  ] 1. Backend offline
+     Expected: Frontend shows connection error
+
+[  ] 2. Arduino disconnected
+     Expected: "Device not connected" message
+
+[  ] 3. Invalid image format
+     Expected: Backend rejects with error
+
+[  ] 4. No face detected
+     Expected: "No face detected in image"
+
+[  ] 5. Unenrolled user verification
+     Expected: "No enrolled [method] for this user"
+
+[  ] 6. Network timeout
+     Expected: Graceful error handling
+
+[  ] 7. Bluetooth permission denied
+     Expected: Error message shown
+
+===============================================
+PERFORMANCE TESTING:
+===============================================
+
+[  ] 1. Face enrollment < 3 seconds
+[  ] 2. Face verification < 2 seconds
+[  ] 3. Voice enrollment < 2 seconds
+[  ] 4. Voice verification < 2 seconds
+[  ] 5. Gesture recording smooth (20Hz)
+[  ] 6. Sensor updates every 2 seconds
+[  ] 7. No UI lag during operations
+[  ] 8. API response times < 500ms
+
+===============================================
+SECURITY TESTING:
+===============================================
+
+[  ] 1. PIN stored as hash, not plaintext
+[  ] 2. HTTPS enforced (production)
+[  ] 3. CORS only allows frontend origin
+[  ] 4. Authentication required for protected routes
+[  ] 5. BLE pairing requires user consent
+[  ] 6. Session tokens expire correctly
+[  ] 7. No sensitive data in console logs
+
+===============================================
+CROSS-BROWSER TESTING:
+===============================================
+
+[  ] Chrome (recommended)
+[  ] Edge
+[  ] Opera
+[  ] Safari (limited BLE support)
+[  ] Firefox (no BLE support)
+
+===============================================
+FUTURE FLUTTER INTEGRATION:
+===============================================
+
+[  ] 1. API endpoints documented
+[  ] 2. Backend accepts requests from Flutter
+[  ] 3. Authentication flow compatible
+[  ] 4. Shared database schema
+[  ] 5. BLE UUIDs documented for Flutter
+
+===============================================
+
+SIGN-OFF:
+--------
+[  ] All critical tests passing
+[  ] Documentation complete
+[  ] Known issues documented
+[  ] Ready for deployment/demo
+
+Tested by: _______________
+Date: _______________
+Notes: _______________________________________________

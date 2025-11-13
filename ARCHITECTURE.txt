@@ -1,0 +1,448 @@
+=============================================
+AuthentiX - System Architecture Overview
+Hybrid Multi-Modal Authentication Platform
+=============================================
+
+┌─────────────────────────────────────────────────────────────┐
+│                    SYSTEM LAYERS                             │
+└─────────────────────────────────────────────────────────────┘
+
+                    ┌──────────────┐
+                    │   CLIENTS    │
+                    └──────┬───────┘
+                           │
+           ┌───────────────┼───────────────┐
+           │               │               │
+    ┌──────▼─────┐  ┌─────▼─────┐  ┌─────▼──────┐
+    │ React Web  │  │  Flutter  │  │   Future   │
+    │    App     │  │  Mobile   │  │   Clients  │
+    └──────┬─────┘  └─────┬─────┘  └─────┬──────┘
+           │               │               │
+           └───────────────┼───────────────┘
+                           │
+                    ┌──────▼───────┐
+                    │   BACKEND    │
+                    │ Python/FastAPI│
+                    └──────┬───────┘
+                           │
+           ┌───────────────┼───────────────┐
+           │               │               │
+    ┌──────▼─────┐  ┌─────▼─────┐  ┌─────▼──────┐
+    │   FAISS    │  │  Supabase │  │  Arduino   │
+    │  Database  │  │ PostgreSQL│  │  BLE 33    │
+    └────────────┘  └───────────┘  └────────────┘
+
+=============================================
+COMPONENT BREAKDOWN:
+=============================================
+
+1. FRONTEND LAYER (React + TypeScript)
+   ┌──────────────────────────────────────┐
+   │ React Application                    │
+   ├──────────────────────────────────────┤
+   │ • Pages:                             │
+   │   - Home (Landing)                   │
+   │   - Auth (Login/Signup)              │
+   │   - Enroll (Biometric setup)         │
+   │   - Authenticate (Verification)      │
+   │   - Dashboard (Main hub)             │
+   │                                       │
+   │ • Components:                         │
+   │   - FaceAuth (Camera capture)        │
+   │   - VoiceAuth (Audio recording)      │
+   │   - GestureAuth (IMU data)           │
+   │   - PinAuth (Numeric keypad)         │
+   │   - SensorDisplay (Temp/Humidity)    │
+   │                                       │
+   │ • Hooks:                              │
+   │   - useAuth (Supabase auth)          │
+   │   - useBluetooth (BLE connection)    │
+   │   - usePythonAPI (Backend calls)     │
+   │   - useAuthMethods (Method tracking) │
+   │                                       │
+   │ • State Management:                   │
+   │   - React Query (Server state)       │
+   │   - React Hooks (Local state)        │
+   └──────────────────────────────────────┘
+
+2. BACKEND LAYER (Python + FastAPI)
+   ┌──────────────────────────────────────┐
+   │ FastAPI Server                       │
+   ├──────────────────────────────────────┤
+   │ main.py                              │
+   │ └─ API Routes                        │
+   │    ├─ GET  /                         │
+   │    ├─ POST /face/enroll              │
+   │    ├─ POST /face/verify              │
+   │    ├─ POST /voice/enroll             │
+   │    ├─ POST /voice/verify             │
+   │    ├─ POST /gesture/enroll           │
+   │    └─ POST /gesture/verify           │
+   │                                       │
+   │ services/                             │
+   │ ├─ face_service.py                   │
+   │ │  ├─ FAISS Index Management         │
+   │ │  ├─ Face Detection (OpenCV)        │
+   │ │  ├─ Embedding Extraction           │
+   │ │  └─ Similarity Search              │
+   │ │                                     │
+   │ ├─ voice_service.py                  │
+   │ │  ├─ Audio Processing (Librosa)     │
+   │ │  ├─ MFCC Feature Extraction        │
+   │ │  ├─ Embedding Storage              │
+   │ │  └─ Cosine Similarity              │
+   │ │                                     │
+   │ └─ gesture_service.py                │
+   │    ├─ IMU Data Processing            │
+   │    ├─ Feature Normalization          │
+   │    ├─ DTW Distance Calculation       │
+   │    └─ Similarity Scoring             │
+   └──────────────────────────────────────┘
+
+3. DATA STORAGE LAYER
+   ┌──────────────────────────────────────┐
+   │ FAISS Vector Database                │
+   ├──────────────────────────────────────┤
+   │ data/face/                           │
+   │ ├─ faiss_index.bin                   │
+   │ ├─ labels.pkl                        │
+   │ └─ embeddings.pkl                    │
+   │                                       │
+   │ data/voice/                          │
+   │ └─ voice_embeddings.pkl              │
+   │                                       │
+   │ data/gesture/                        │
+   │ └─ gesture_embeddings.pkl            │
+   └──────────────────────────────────────┘
+
+   ┌──────────────────────────────────────┐
+   │ Supabase (PostgreSQL)                │
+   ├──────────────────────────────────────┤
+   │ Tables:                              │
+   │ ├─ auth.users                        │
+   │ ├─ profiles                          │
+   │ ├─ authentication_methods            │
+   │ ├─ authentication_logs               │
+   │ └─ pins                              │
+   │                                       │
+   │ Features:                             │
+   │ ├─ Row Level Security (RLS)          │
+   │ ├─ JWT Authentication                │
+   │ └─ Real-time Subscriptions           │
+   └──────────────────────────────────────┘
+
+4. HARDWARE LAYER (Arduino)
+   ┌──────────────────────────────────────┐
+   │ Arduino Nano BLE 33 Rev2             │
+   ├──────────────────────────────────────┤
+   │ Sensors:                             │
+   │ ├─ LSM6DSOX (IMU)                    │
+   │ │  ├─ Accelerometer (3-axis)         │
+   │ │  └─ Gyroscope (3-axis)             │
+   │ └─ Temperature/Humidity (simulated)  │
+   │                                       │
+   │ BLE Services:                         │
+   │ ├─ Environmental (181A)              │
+   │ │  ├─ Temperature (2A6E)             │
+   │ │  └─ Humidity (2A6F)                │
+   │ │                                     │
+   │ ├─ IMU (19B10000...)                 │
+   │ │  ├─ Accelerometer (19B10001...)    │
+   │ │  └─ Gyroscope (19B10002...)        │
+   │ │                                     │
+   │ └─ Voice (19B10010...)               │
+   │    └─ Audio Data (19B10011...)       │
+   │                                       │
+   │ Firmware:                             │
+   │ └─ authentix_ble.ino                 │
+   │    ├─ BLE Advertising                │
+   │    ├─ Sensor Reading (2s interval)   │
+   │    ├─ IMU Sampling (50ms interval)   │
+   │    └─ Characteristic Updates         │
+   └──────────────────────────────────────┘
+
+=============================================
+DATA FLOW DIAGRAMS:
+=============================================
+
+ENROLLMENT FLOW:
+---------------
+User → React App → Camera/Mic/Arduino
+                         │
+                         ▼
+                 Capture Biometric
+                         │
+                         ▼
+                Python Backend API
+                         │
+         ┌───────────────┼───────────────┐
+         ▼               ▼               ▼
+    Extract         Extract         Extract
+     Face            Voice          Gesture
+   Embedding       Features        Features
+         │               │               │
+         ▼               ▼               ▼
+    FAISS Index     Pickle File     Pickle File
+         │               │               │
+         └───────────────┼───────────────┘
+                         ▼
+                 Supabase Update
+              (is_enrolled = true)
+                         │
+                         ▼
+                Success Response
+                         │
+                         ▼
+                   React UI Update
+
+VERIFICATION FLOW:
+-----------------
+User → React App → Biometric Input
+                         │
+                         ▼
+                Python Backend API
+                         │
+                         ▼
+                Extract Features
+                         │
+                         ▼
+             Compare with Stored Data
+          (FAISS Search / Cosine / DTW)
+                         │
+         ┌───────────────┼───────────────┐
+         ▼               ▼               ▼
+    Match Found?    Confidence      Threshold
+                     Score           Check
+         │               │               │
+         └───────────────┼───────────────┘
+                         ▼
+                 Log to Supabase
+            (authentication_logs)
+                         │
+                         ▼
+                Success/Failure
+                         │
+                         ▼
+                   React UI Update
+
+BLUETOOTH CONNECTION FLOW:
+-------------------------
+React App
+    │
+    ▼
+navigator.bluetooth.requestDevice()
+    │
+    ▼
+User Selects "AuthentiX-BLE"
+    │
+    ▼
+GATT Connection Established
+    │
+    ▼
+Get Primary Services
+    │
+    ├─ Environmental Service (181A)
+    │  ├─ Read Temperature
+    │  └─ Read Humidity
+    │
+    └─ IMU Service (19B10000...)
+       ├─ Read Accelerometer
+       └─ Read Gyroscope
+    │
+    ▼
+Display Data in Dashboard
+    │
+    ▼
+Continuous Updates (Notifications)
+
+=============================================
+SECURITY ARCHITECTURE:
+=============================================
+
+┌────────────────────────────────────────┐
+│ Security Layers                        │
+├────────────────────────────────────────┤
+│                                         │
+│ 1. Transport Security                   │
+│    ├─ HTTPS (Production)               │
+│    ├─ BLE Secure Pairing               │
+│    └─ WebSocket TLS                    │
+│                                         │
+│ 2. Authentication                       │
+│    ├─ Supabase JWT Tokens              │
+│    ├─ Session Management               │
+│    └─ Token Expiration                 │
+│                                         │
+│ 3. Authorization                        │
+│    ├─ Row Level Security               │
+│    ├─ User-scoped Data                 │
+│    └─ API Rate Limiting                │
+│                                         │
+│ 4. Data Protection                      │
+│    ├─ PIN: SHA-256 Hash                │
+│    ├─ Embeddings: Encrypted at Rest    │
+│    └─ No PII in Logs                   │
+│                                         │
+│ 5. API Security                         │
+│    ├─ CORS Whitelist                   │
+│    ├─ Input Validation                 │
+│    └─ Error Handling                   │
+│                                         │
+└────────────────────────────────────────┘
+
+=============================================
+SCALABILITY CONSIDERATIONS:
+=============================================
+
+Current Implementation:
+- Single server deployment
+- Local file-based embeddings
+- Direct client-server communication
+
+Future Enhancements:
+┌────────────────────────────────────────┐
+│ 1. Horizontal Scaling                   │
+│    ├─ Load Balancer                    │
+│    ├─ Multiple API Instances           │
+│    └─ Shared Storage (S3/Cloud)        │
+│                                         │
+│ 2. Database Optimization                │
+│    ├─ FAISS GPU Acceleration           │
+│    ├─ Database Replication             │
+│    └─ Caching Layer (Redis)            │
+│                                         │
+│ 3. Microservices                        │
+│    ├─ Separate Face Service            │
+│    ├─ Separate Voice Service           │
+│    └─ API Gateway                      │
+│                                         │
+│ 4. Edge Computing                       │
+│    ├─ On-device Models                 │
+│    ├─ Local Processing                 │
+│    └─ Cloud Sync                       │
+└────────────────────────────────────────┘
+
+=============================================
+TECHNOLOGY STACK SUMMARY:
+=============================================
+
+Frontend:
+├─ React 18.3.1
+├─ TypeScript 5.8.3
+├─ Vite 5.4.19
+├─ Shadcn UI
+├─ Tailwind CSS 3.4.17
+├─ React Router 6.30.1
+├─ React Query 5.83.0
+└─ Web Bluetooth API
+
+Backend:
+├─ Python 3.9+
+├─ FastAPI 0.115.5
+├─ Uvicorn 0.32.1
+├─ NumPy 1.26.4
+├─ FAISS 1.9.0
+├─ OpenCV 4.10.0
+├─ Librosa 0.10.2
+└─ Pillow 11.0.0
+
+Database:
+├─ Supabase (PostgreSQL)
+└─ FAISS Vector Database
+
+Hardware:
+├─ Arduino Nano BLE 33 Rev2
+├─ ArduinoBLE Library
+└─ Arduino_LSM6DSOX Library
+
+DevOps:
+├─ Git Version Control
+├─ npm/pip Package Managers
+└─ Arduino IDE 2.x
+
+=============================================
+API CONTRACT:
+=============================================
+
+All endpoints return JSON:
+
+Success Response:
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { ... }
+}
+
+Error Response:
+{
+  "success": false,
+  "message": "Error description",
+  "error": "Error details"
+}
+
+Face/Voice Verification Response:
+{
+  "success": true,
+  "match": true/false,
+  "confidence": 0.0-1.0,
+  "message": "Verification complete"
+}
+
+Gesture Verification Response:
+{
+  "success": true,
+  "match": true/false,
+  "confidence": 0.0-1.0,
+  "message": "Verification complete"
+}
+
+=============================================
+DEPLOYMENT SCENARIOS:
+=============================================
+
+Development:
+- Local React dev server (Vite)
+- Local Python server (Uvicorn)
+- Arduino on USB
+- Localhost Supabase
+
+Production:
+- React: Vercel/Netlify
+- Backend: Railway/Render/AWS
+- Database: Supabase Cloud
+- Arduino: Physical deployment
+
+Mobile (Future):
+- Flutter: iOS/Android app stores
+- Backend: Same as web
+- Arduino: BLE pairing
+
+=============================================
+MONITORING & OBSERVABILITY:
+=============================================
+
+Current:
+- Browser DevTools
+- Python Logging
+- Arduino Serial Monitor
+- Supabase Dashboard
+
+Future:
+- Application Performance Monitoring
+- Error Tracking (Sentry)
+- Analytics (Mixpanel/Amplitude)
+- Uptime Monitoring
+- Log Aggregation
+
+=============================================
+
+This architecture supports:
+✓ Multi-modal authentication
+✓ Real-time sensor data
+✓ Cross-platform compatibility
+✓ Scalable design
+✓ Security best practices
+✓ Future Flutter integration
+✓ Extensible services
+
+End of Architecture Overview

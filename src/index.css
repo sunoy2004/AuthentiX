@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MFA Dark Neon Design System */
+
+@layer base {
+  :root {
+    /* Dark neon theme colors */
+    --background: 235 39% 5%;
+    --foreground: 0 0% 98%;
+
+    --card: 235 39% 8%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 235 39% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 142 76% 36%;
+    --primary-foreground: 235 39% 5%;
+
+    --secondary: 235 39% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 235 39% 15%;
+    --muted-foreground: 215 16% 65%;
+
+    --accent: 271 76% 53%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 235 39% 20%;
+    --input: 235 39% 15%;
+    --ring: 142 76% 36%;
+
+    /* Neon colors for authentication methods */
+    --neon-green: 142 76% 36%;
+    --neon-green-glow: 142 76% 50%;
+    --neon-purple: 271 76% 53%;
+    --neon-purple-glow: 271 76% 65%;
+    --neon-blue: 200 95% 50%;
+    --neon-blue-glow: 200 95% 65%;
+    --neon-pink: 320 86% 60%;
+    --neon-pink-glow: 320 86% 70%;
+
+    /* Gradients */
+    --gradient-bg: linear-gradient(135deg, hsl(235 39% 5%) 0%, hsl(235 39% 8%) 50%, hsl(235 39% 6%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(235 39% 10%) 0%, hsl(235 39% 8%) 100%);
+
+    --radius: 1rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Animations */
+  @keyframes neon-glow {
+    0%, 100% { 
+      box-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+    }
+    50% { 
+      box-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Neon utility classes */
+  .neon-green {
+    color: hsl(var(--neon-green));
+    border-color: hsl(var(--neon-green));
+  }
+
+  .neon-green-glow {
+    animation: neon-glow 2s ease-in-out infinite alternate;
+    color: hsl(var(--neon-green-glow));
+    border-color: hsl(var(--neon-green-glow));
+  }
+
+  .neon-purple {
+    color: hsl(var(--neon-purple));
+    border-color: hsl(var(--neon-purple));
+  }
+
+  .neon-purple-glow {
+    animation: neon-glow 2s ease-in-out infinite alternate;
+    color: hsl(var(--neon-purple-glow));
+    border-color: hsl(var(--neon-purple-glow));
+  }
+
+  .neon-blue {
+    color: hsl(var(--neon-blue));
+    border-color: hsl(var(--neon-blue));
+  }
+
+  .neon-blue-glow {
+    animation: neon-glow 2s ease-in-out infinite alternate;
+    color: hsl(var(--neon-blue-glow));
+    border-color: hsl(var(--neon-blue-glow));
+  }
+
+  .neon-pink {
+    color: hsl(var(--neon-pink));
+    border-color: hsl(var(--neon-pink));
+  }
+
+  .neon-pink-glow {
+    animation: neon-glow 2s ease-in-out infinite alternate;
+    color: hsl(var(--neon-pink-glow));
+    border-color: hsl(var(--neon-pink-glow));
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
