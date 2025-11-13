@@ -6,28 +6,20 @@ import uvicorn
 from typing import List, Optional
 from datetime import datetime
 import asyncio
+import logging
 
-# Simplified services without heavy ML dependencies
-class SimpleFaceService:
-    async def enroll(self, user_id: str, image_bytes: bytes):
-        return {"success": True, "message": "Face enrolled successfully (mock)"}
-    
-    async def verify(self, user_id: str, image_bytes: bytes):
-        return {"success": True, "match": True, "confidence": 0.92, "message": "Face verified (mock)"}
+# Import actual services
+from services.face_service import FaceService
+from services.voice_service import VoiceService
+from services.gesture_service import GestureService
+from supabase_client import log_auth_event
 
-class SimpleVoiceService:
-    async def enroll(self, user_id: str, audio_bytes: bytes):
-        return {"success": True, "message": "Voice enrolled successfully (mock)"}
-    
-    async def verify(self, user_id: str, audio_bytes: bytes):
-        return {"success": True, "match": True, "confidence": 0.88, "message": "Voice verified (mock)"}
-
-class SimpleGestureService:
-    async def enroll(self, user_id: str, gesture_sequence: List[dict]):
-        return {"success": True, "message": "Gesture enrolled successfully (mock)"}
-    
-    async def verify(self, user_id: str, gesture_sequence: List[dict]):
-        return {"success": True, "match": True, "confidence": 0.85, "message": "Gesture verified (mock)"}
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="AuthentiX API",
@@ -54,9 +46,21 @@ app.add_middleware(
 )
 
 # Initialize services
-face_service = SimpleFaceService()
-voice_service = SimpleVoiceService()
-gesture_service = SimpleGestureService()
+try:
+    face_service = FaceService()
+    logger.info("Face service initialized")
+except Exception as e:
+    logger.error(f"Failed to initialize face service: {e}")
+    face_service = None
+
+try:
+    voice_service = VoiceService()
+    logger.info("Voice service initialized")
+except Exception as e:
+    logger.error(f"Failed to initialize voice service: {e}")
+    voice_service = None
+
+gesture_service = GestureService()
 
 # Pydantic models
 class GestureData(BaseModel):
@@ -95,10 +99,21 @@ async def enroll_face(
 ):
     """Enroll a new face for a user"""
     try:
+        if face_service is None:
+            raise HTTPException(status_code=503, detail="Face service not available")
+        
         image_bytes = await image.read()
         result = await face_service.enroll(user_id, image_bytes)
+        
+        # Log to Supabase
+        if result.get("success"):
+            log_auth_event(user_id, "face", "enrolled", 1.0)
+        else:
+            log_auth_event(user_id, "face", "enrollment_failed", 0.0)
+        
         return result
     except Exception as e:
+        logger.error(f"Face enrollment error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/face/verify")
@@ -108,10 +123,21 @@ async def verify_face(
 ):
     """Verify a face against enrolled data"""
     try:
+        if face_service is None:
+            raise HTTPException(status_code=503, detail="Face service not available")
+        
         image_bytes = await image.read()
         result = await face_service.verify(user_id, image_bytes)
+        
+        # Log to Supabase
+        if result.get("success") and result.get("match"):
+            log_auth_event(user_id, "face", "verified", result.get("confidence", 0.0))
+        else:
+            log_auth_event(user_id, "face", "verification_failed", result.get("confidence", 0.0))
+        
         return result
     except Exception as e:
+        logger.error(f"Face verification error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Voice Authentication Endpoints
@@ -122,10 +148,21 @@ async def enroll_voice(
 ):
     """Enroll a new voice sample for a user"""
     try:
+        if voice_service is None:
+            raise HTTPException(status_code=503, detail="Voice service not available")
+        
         audio_bytes = await audio.read()
         result = await voice_service.enroll(user_id, audio_bytes)
+        
+        # Log to Supabase
+        if result.get("success"):
+            log_auth_event(user_id, "voice", "enrolled", 1.0)
+        else:
+            log_auth_event(user_id, "voice", "enrollment_failed", 0.0)
+        
         return result
     except Exception as e:
+        logger.error(f"Voice enrollment error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/voice/verify")
@@ -135,10 +172,21 @@ async def verify_voice(
 ):
     """Verify a voice against enrolled data"""
     try:
+        if voice_service is None:
+            raise HTTPException(status_code=503, detail="Voice service not available")
+        
         audio_bytes = await audio.read()
         result = await voice_service.verify(user_id, audio_bytes)
+        
+        # Log to Supabase
+        if result.get("success") and result.get("match"):
+            log_auth_event(user_id, "voice", "verified", result.get("confidence", 0.0))
+        else:
+            log_auth_event(user_id, "voice", "verification_failed", result.get("confidence", 0.0))
+        
         return result
     except Exception as e:
+        logger.error(f"Voice verification error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Gesture Authentication Endpoints
