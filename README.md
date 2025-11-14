@@ -249,11 +249,13 @@ MODEL_PATH_GESTURE=
 
 ### ⭐ Landing Page
 
-![Landing](./public/screenshots/landing.png)
+<img width="1895" height="904" alt="image" src="https://github.com/user-attachments/assets/53932840-bb2c-4f44-b2cf-0abc4500a160" />
+
 
 ### 🔐 Authentication Dashboard
 
-![Dashboard](./public/screenshots/dashboard.png)
+<img width="1913" height="903" alt="image" src="https://github.com/user-attachments/assets/6dc4cf8b-4fc6-45b2-8c0b-40db89ab0f0a" />
+
 
 ---
 
