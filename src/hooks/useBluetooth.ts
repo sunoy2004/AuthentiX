@@ -1,9 +1,27 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
+
+// BLE Service and Characteristic UUIDs for Environmental Sensors
+const SERVICE_UUID = '19b10000-e8f2-537e-4f6c-d104768a1214';
+const TEMP_CHAR_UUID = '19b10001-e8f2-537e-4f6c-d104768a1214';
+const HUMIDITY_CHAR_UUID = '19b10002-e8f2-537e-4f6c-d104768a1214';
+const AIR_QUALITY_CHAR_UUID = '19b10003-e8f2-537e-4f6c-d104768a1214';
+const LIGHT_CHAR_UUID = '19b10004-e8f2-537e-4f6c-d104768a1214';
+const IMU_CHAR_UUID = '19b10005-e8f2-537e-4f6c-d104768a1214';
 
 export interface SensorData {
   temperature: number;
   humidity: number;
+  airQuality: number;
+  light: number;
+  imu: {
+    ax: number;
+    ay: number;
+    az: number;
+    gx: number;
+    gy: number;
+    gz: number;
+  };
   timestamp: number;
 }
 
@@ -19,77 +37,188 @@ export interface GestureData {
 export const useBluetooth = () => {
   const [device, setDevice] = useState<BluetoothDevice | null>(null);
   const [connected, setConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [sensorData, setSensorData] = useState<SensorData | null>(null);
   const [gestureData, setGestureData] = useState<GestureData | null>(null);
+  
+  const serverRef = useRef<BluetoothRemoteGATTServer | null>(null);
+  const characteristicsRef = useRef<{
+    temp?: BluetoothRemoteGATTCharacteristic;
+    humidity?: BluetoothRemoteGATTCharacteristic;
+    airQuality?: BluetoothRemoteGATTCharacteristic;
+    light?: BluetoothRemoteGATTCharacteristic;
+    imu?: BluetoothRemoteGATTCharacteristic;
+  }>({});
 
   const connect = useCallback(async () => {
+    console.log('[useBluetooth] Starting connection...');
+    setConnecting(true);
+    
     try {
       if (!navigator.bluetooth) {
         toast.error('Bluetooth is not supported on this device');
         return false;
       }
 
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ namePrefix: 'AuthentiX' }],
-        optionalServices: [
-          '181a', // Environmental Sensing Service
-          '19b10000-e8f2-537e-4f6c-d104768a1214', // IMU Service
-          '19b10010-e8f2-537e-4f6c-d104768a1214', // Voice Service
+      console.log('[useBluetooth] Requesting device...');
+      const bleDevice = await navigator.bluetooth.requestDevice({
+        filters: [
+          { name: 'AuthentiX-Sensors' },
+          { services: [SERVICE_UUID] }
         ],
+        optionalServices: [SERVICE_UUID]
       });
 
-      setDevice(device);
+      console.log('[useBluetooth] Device selected:', bleDevice.name);
+      setDevice(bleDevice);
       
-      const server = await device.gatt?.connect();
-      if (!server) {
-        throw new Error('Failed to connect to GATT server');
-      }
+      // Add disconnect listener
+      bleDevice.addEventListener('gattserverdisconnected', handleDisconnect);
+      
+      console.log('[useBluetooth] Connecting to GATT server...');
+      const server = await bleDevice.gatt!.connect();
+      serverRef.current = server;
+      
+      console.log('[useBluetooth] Getting service...');
+      const service = await server.getPrimaryService(SERVICE_UUID);
+      
+      // Get all characteristics
+      console.log('[useBluetooth] Getting characteristics...');
+      const tempChar = await service.getCharacteristic(TEMP_CHAR_UUID);
+      const humidityChar = await service.getCharacteristic(HUMIDITY_CHAR_UUID);
+      const airQualityChar = await service.getCharacteristic(AIR_QUALITY_CHAR_UUID);
+      const lightChar = await service.getCharacteristic(LIGHT_CHAR_UUID);
+      const imuChar = await service.getCharacteristic(IMU_CHAR_UUID);
+      
+      characteristicsRef.current = {
+        temp: tempChar,
+        humidity: humidityChar,
+        airQuality: airQualityChar,
+        light: lightChar,
+        imu: imuChar
+      };
+      
+      // Start notifications
+      console.log('[useBluetooth] Starting notifications...');
+      await tempChar.startNotifications();
+      await humidityChar.startNotifications();
+      await airQualityChar.startNotifications();
+      await lightChar.startNotifications();
+      await imuChar.startNotifications();
+      
+      // Add event listeners
+      tempChar.addEventListener('characteristicvaluechanged', handleTempChange);
+      humidityChar.addEventListener('characteristicvaluechanged', handleHumidityChange);
+      airQualityChar.addEventListener('characteristicvaluechanged', handleAirQualityChange);
+      lightChar.addEventListener('characteristicvaluechanged', handleLightChange);
+      imuChar.addEventListener('characteristicvaluechanged', handleImuChange);
 
       setConnected(true);
-      toast.success('Connected to AuthentiX Arduino BLE 33 Rev2');
+      toast.success('Connected to AuthentiX Environmental Sensors');
+      console.log('[useBluetooth] Successfully connected');
       
       return true;
     } catch (error: any) {
       toast.error('Failed to connect to Arduino');
-      console.error(error);
+      console.error('[useBluetooth] Connection error:', error);
       return false;
+    } finally {
+      setConnecting(false);
+    }
+  }, []);
+
+  const handleDisconnect = useCallback(() => {
+    console.log('[useBluetooth] Device disconnected');
+    setConnected(false);
+    setDevice(null);
+    serverRef.current = null;
+    characteristicsRef.current = {};
+    setSensorData(null);
+    toast.info('Disconnected from Arduino');
+  }, []);
+  
+  const handleTempChange = useCallback((event: Event) => {
+    const target = event.target as BluetoothRemoteGATTCharacteristic;
+    const value = target.value!.getFloat32(0, true);
+    setSensorData(prev => prev ? { ...prev, temperature: value, timestamp: Date.now() } : null);
+  }, []);
+  
+  const handleHumidityChange = useCallback((event: Event) => {
+    const target = event.target as BluetoothRemoteGATTCharacteristic;
+    const value = target.value!.getFloat32(0, true);
+    setSensorData(prev => prev ? { ...prev, humidity: value, timestamp: Date.now() } : null);
+  }, []);
+  
+  const handleAirQualityChange = useCallback((event: Event) => {
+    const target = event.target as BluetoothRemoteGATTCharacteristic;
+    const value = target.value!.getInt32(0, true);
+    setSensorData(prev => prev ? { ...prev, airQuality: value, timestamp: Date.now() } : null);
+  }, []);
+  
+  const handleLightChange = useCallback((event: Event) => {
+    const target = event.target as BluetoothRemoteGATTCharacteristic;
+    const value = target.value!.getInt32(0, true);
+    setSensorData(prev => prev ? { ...prev, light: value, timestamp: Date.now() } : null);
+  }, []);
+  
+  const handleImuChange = useCallback((event: Event) => {
+    const target = event.target as BluetoothRemoteGATTCharacteristic;
+    const decoder = new TextDecoder('utf-8');
+    const jsonString = decoder.decode(target.value!);
+    try {
+      const imu = JSON.parse(jsonString);
+      setSensorData(prev => prev ? { ...prev, imu, timestamp: Date.now() } : null);
+    } catch (err) {
+      console.error('[useBluetooth] Failed to parse IMU data:', err);
     }
   }, []);
 
   const disconnect = useCallback(async () => {
-    if (device?.gatt?.connected) {
-      device.gatt.disconnect();
-      setConnected(false);
-      setDevice(null);
-      toast.info('Disconnected from Arduino');
+    console.log('[useBluetooth] Disconnecting...');
+    
+    if (serverRef.current?.connected) {
+      serverRef.current.disconnect();
     }
-  }, [device]);
+    
+    if (device) {
+      device.removeEventListener('gattserverdisconnected', handleDisconnect);
+    }
+    
+    setConnected(false);
+    setDevice(null);
+    serverRef.current = null;
+    characteristicsRef.current = {};
+    setSensorData(null);
+  }, [device, handleDisconnect]);
 
   const readSensorData = useCallback(async (): Promise<SensorData | null> => {
-    if (!device?.gatt?.connected) {
+    if (!serverRef.current?.connected) {
       toast.error('Device not connected');
       return null;
     }
 
     try {
-      const server = device.gatt;
+      const { temp, humidity, airQuality, light, imu } = characteristicsRef.current;
       
-      // Get Environmental Sensing Service
-      const envService = await server.getPrimaryService('181a');
+      if (!temp || !humidity || !airQuality || !light || !imu) {
+        throw new Error('Characteristics not initialized');
+      }
       
-      // Read temperature (UUID: 2A6E)
-      const tempChar = await envService.getCharacteristic('2a6e');
-      const tempValue = await tempChar.readValue();
-      const temperature = tempValue.getFloat32(0, true);
+      const tempValue = await temp.readValue();
+      const humidValue = await humidity.readValue();
+      const airValue = await airQuality.readValue();
+      const lightValue = await light.readValue();
+      const imuValue = await imu.readValue();
       
-      // Read humidity (UUID: 2A6F)
-      const humidChar = await envService.getCharacteristic('2a6f');
-      const humidValue = await humidChar.readValue();
-      const humidity = humidValue.getFloat32(0, true);
+      const decoder = new TextDecoder('utf-8');
+      const imuJson = JSON.parse(decoder.decode(imuValue));
       
       const data: SensorData = {
-        temperature,
-        humidity,
+        temperature: tempValue.getFloat32(0, true),
+        humidity: humidValue.getFloat32(0, true),
+        airQuality: airValue.getInt32(0, true),
+        light: lightValue.getInt32(0, true),
+        imu: imuJson,
         timestamp: Date.now(),
       };
 
@@ -97,16 +226,9 @@ export const useBluetooth = () => {
       return data;
     } catch (error) {
       console.error('Failed to read sensor data:', error);
-      // Fallback to simulated data
-      const data: SensorData = {
-        temperature: 22 + Math.random() * 5,
-        humidity: 45 + Math.random() * 20,
-        timestamp: Date.now(),
-      };
-      setSensorData(data);
-      return data;
+      return null;
     }
-  }, [device]);
+  }, []);
 
   const recordGesture = useCallback(async (durationMs: number = 3000): Promise<GestureData[] | null> => {
     if (!device?.gatt?.connected) {
@@ -185,6 +307,7 @@ export const useBluetooth = () => {
   return {
     device,
     connected,
+    connecting,
     sensorData,
     gestureData,
     connect,
