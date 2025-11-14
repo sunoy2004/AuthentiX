@@ -119,8 +119,21 @@ export const useBluetooth = () => {
       
       return true;
     } catch (error: any) {
-      toast.error('Failed to connect to Arduino');
       console.error('[useBluetooth] Connection error:', error);
+      
+      // More detailed error messages
+      if (error.name === 'NotFoundError') {
+        toast.error('Arduino not found. Make sure it is powered on and nearby.');
+      } else if (error.name === 'SecurityError') {
+        toast.error('Bluetooth access denied. Check browser permissions.');
+      } else if (error.name === 'NetworkError') {
+        toast.error('Connection failed. Arduino may be out of range.');
+      } else if (error.message?.includes('User cancelled')) {
+        toast.info('Connection cancelled');
+      } else {
+        toast.error(`Failed to connect: ${error.message || 'Unknown error'}`);
+      }
+      
       return false;
     } finally {
       setConnecting(false);
@@ -140,25 +153,53 @@ export const useBluetooth = () => {
   const handleTempChange = useCallback((event: Event) => {
     const target = event.target as BluetoothRemoteGATTCharacteristic;
     const value = target.value!.getFloat32(0, true);
-    setSensorData(prev => prev ? { ...prev, temperature: value, timestamp: Date.now() } : null);
+    setSensorData(prev => ({
+      temperature: value,
+      humidity: prev?.humidity || 0,
+      airQuality: prev?.airQuality || 0,
+      light: prev?.light || 0,
+      imu: prev?.imu || { ax: 0, ay: 0, az: 0, gx: 0, gy: 0, gz: 0 },
+      timestamp: Date.now()
+    }));
   }, []);
   
   const handleHumidityChange = useCallback((event: Event) => {
     const target = event.target as BluetoothRemoteGATTCharacteristic;
     const value = target.value!.getFloat32(0, true);
-    setSensorData(prev => prev ? { ...prev, humidity: value, timestamp: Date.now() } : null);
+    setSensorData(prev => ({
+      temperature: prev?.temperature || 0,
+      humidity: value,
+      airQuality: prev?.airQuality || 0,
+      light: prev?.light || 0,
+      imu: prev?.imu || { ax: 0, ay: 0, az: 0, gx: 0, gy: 0, gz: 0 },
+      timestamp: Date.now()
+    }));
   }, []);
   
   const handleAirQualityChange = useCallback((event: Event) => {
     const target = event.target as BluetoothRemoteGATTCharacteristic;
     const value = target.value!.getInt32(0, true);
-    setSensorData(prev => prev ? { ...prev, airQuality: value, timestamp: Date.now() } : null);
+    setSensorData(prev => ({
+      temperature: prev?.temperature || 0,
+      humidity: prev?.humidity || 0,
+      airQuality: value,
+      light: prev?.light || 0,
+      imu: prev?.imu || { ax: 0, ay: 0, az: 0, gx: 0, gy: 0, gz: 0 },
+      timestamp: Date.now()
+    }));
   }, []);
   
   const handleLightChange = useCallback((event: Event) => {
     const target = event.target as BluetoothRemoteGATTCharacteristic;
     const value = target.value!.getInt32(0, true);
-    setSensorData(prev => prev ? { ...prev, light: value, timestamp: Date.now() } : null);
+    setSensorData(prev => ({
+      temperature: prev?.temperature || 0,
+      humidity: prev?.humidity || 0,
+      airQuality: prev?.airQuality || 0,
+      light: value,
+      imu: prev?.imu || { ax: 0, ay: 0, az: 0, gx: 0, gy: 0, gz: 0 },
+      timestamp: Date.now()
+    }));
   }, []);
   
   const handleImuChange = useCallback((event: Event) => {
@@ -167,7 +208,14 @@ export const useBluetooth = () => {
     const jsonString = decoder.decode(target.value!);
     try {
       const imu = JSON.parse(jsonString);
-      setSensorData(prev => prev ? { ...prev, imu, timestamp: Date.now() } : null);
+      setSensorData(prev => ({
+        temperature: prev?.temperature || 0,
+        humidity: prev?.humidity || 0,
+        airQuality: prev?.airQuality || 0,
+        light: prev?.light || 0,
+        imu: imu,
+        timestamp: Date.now()
+      }));
     } catch (err) {
       console.error('[useBluetooth] Failed to parse IMU data:', err);
     }

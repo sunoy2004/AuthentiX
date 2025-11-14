@@ -1,30 +1,22 @@
 /*
  * AuthentiX - Environmental Sensors BLE Module
  * 
- * Sensors:
- * - DHT22: Temperature & Humidity
- * - MQ135: Air Quality (analog)
- * - BH1750: Light Intensity (I2C)
- * - MPU6050: IMU - Accelerometer & Gyroscope (I2C)
+ * Uses BUILT-IN sensors of Arduino Nano 33 BLE Sense Rev2:
+ * - HTS221: Temperature & Humidity (built-in)
+ * - APDS9960: Light & Proximity (built-in)
+ * - LSM9DS1: IMU - Accelerometer & Gyroscope (built-in)
  * 
- * Compatible with: Arduino Nano 33 BLE Sense Rev2 or similar BLE-enabled boards
+ * NO EXTERNAL WIRING NEEDED!
+ * Just upload this code and power the Arduino via USB or battery.
+ * The device will automatically broadcast sensor data via Bluetooth.
  */
 
 #include <ArduinoBLE.h>
-#include <DHT.h>
-#include <Wire.h>
-#include <BH1750.h>
-#include <MPU6050.h>
+#include <Arduino_HS300x.h>  // Temperature & Humidity for Rev2
+#include <Arduino_APDS9960.h> // Built-in light sensor
+#include <Arduino_BMI270_BMM150.h>  // IMU for Rev2 (replaces LSM9DS1)
 
-// Pin Definitions
-#define DHT_PIN 2
-#define DHT_TYPE DHT22
-#define MQ135_PIN A0
-
-// Sensor Objects
-DHT dht(DHT_PIN, DHT_TYPE);
-BH1750 lightMeter;
-MPU6050 mpu;
+// No pin definitions needed - all sensors are built-in!
 
 // BLE Service and Characteristics
 BLEService sensorService("19B10000-E8F2-537E-4F6C-D104768A1214");
@@ -49,34 +41,32 @@ const unsigned long UPDATE_INTERVAL = 2000; // 2 seconds
 unsigned long lastUpdateTime = 0;
 
 void setup() {
-  Serial.begin(9600);
-  while (!Serial);
+  Serial.begin(115200);
+  delay(1000); // Wait for serial (optional, works without serial monitor)
   
   Serial.println("AuthentiX Environmental Sensors");
+  Serial.println("Using BUILT-IN sensors - No wiring needed!");
   Serial.println("Initializing...");
   
-  // Initialize I2C
-  Wire.begin();
-  
-  // Initialize DHT22
-  dht.begin();
-  Serial.println("✓ DHT22 initialized");
-  
-  // Initialize BH1750 Light Sensor
-  if (lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)) {
-    Serial.println("✓ BH1750 initialized");
+  // Initialize HS300x (Temperature & Humidity) for Rev2
+  if (!HS300x.begin()) {
+    Serial.println("✗ HS300x initialization failed!");
   } else {
-    Serial.println("✗ BH1750 initialization failed!");
+    Serial.println("✓ HS300x (Temp & Humidity) initialized");
   }
   
-  // Initialize MPU6050 IMU
-  mpu.initialize();
-  if (mpu.testConnection()) {
-    Serial.println("✓ MPU6050 initialized");
-    mpu.setFullScaleAccelRange(MPU6050_ACCEL_FS_2);
-    mpu.setFullScaleGyroRange(MPU6050_GYRO_FS_250);
+  // Initialize APDS9960 (Light & Proximity)
+  if (!APDS.begin()) {
+    Serial.println("✗ APDS9960 initialization failed!");
   } else {
-    Serial.println("✗ MPU6050 initialization failed!");
+    Serial.println("✓ APDS9960 (Light) initialized");
+  }
+  
+  // Initialize BMI270/BMM150 (IMU) for Rev2
+  if (!IMU.begin()) {
+    Serial.println("✗ BMI270 initialization failed!");
+  } else {
+    Serial.println("✓ BMI270 (IMU) initialized");
   }
   
   // Initialize BLE
@@ -142,33 +132,35 @@ void loop() {
 }
 
 void updateSensorData() {
-  // Read DHT22 - Temperature & Humidity
-  float temperature = dht.readTemperature();
-  float humidity = dht.readHumidity();
+  // Read HS300x - Temperature & Humidity (Rev2)
+  float temperature = HS300x.readTemperature();
+  float humidity = HS300x.readHumidity();
   
-  if (isnan(temperature) || isnan(humidity)) {
-    Serial.println("✗ Failed to read from DHT sensor!");
-    temperature = 0.0;
-    humidity = 0.0;
+  // Read APDS9960 - Light Intensity
+  int lightIntensity = 0;
+  while (!APDS.colorAvailable()) {
+    delay(5);
+  }
+  int r, g, b;
+  APDS.readColor(r, g, b);
+  // Calculate approximate lux from RGB (simple average)
+  lightIntensity = (r + g + b) / 3;
+  
+  // Simulate air quality (0-1023) - not available on built-in sensors
+  // You can add external sensor later or use proximity as alternative
+  int airQuality = random(80, 150); // Simulated good air quality
+  
+  // Read LSM9DS1 - IMU Data (built-in)
+  float accelX = 0, accelY = 0, accelZ = 0;
+  float gyroX = 0, gyroY = 0, gyroZ = 0;
+  
+  if (IMU.accelerationAvailable()) {
+    IMU.readAcceleration(accelX, accelY, accelZ);
   }
   
-  // Read MQ135 - Air Quality (0-1023)
-  int airQuality = analogRead(MQ135_PIN);
-  
-  // Read BH1750 - Light Intensity (lux)
-  uint16_t lux = lightMeter.readLightLevel();
-  
-  // Read MPU6050 - IMU Data
-  int16_t ax, ay, az, gx, gy, gz;
-  mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-  
-  // Convert IMU raw values to readable units
-  float accelX = ax / 16384.0; // ±2g range
-  float accelY = ay / 16384.0;
-  float accelZ = az / 16384.0;
-  float gyroX = gx / 131.0;    // ±250°/s range
-  float gyroY = gy / 131.0;
-  float gyroZ = gz / 131.0;
+  if (IMU.gyroscopeAvailable()) {
+    IMU.readGyroscope(gyroX, gyroY, gyroZ);
+  }
   
   // Create IMU JSON string
   String imuJson = "{";
@@ -184,15 +176,15 @@ void updateSensorData() {
   tempCharacteristic.writeValue(temperature);
   humidityCharacteristic.writeValue(humidity);
   airQualityCharacteristic.writeValue(airQuality);
-  lightCharacteristic.writeValue(lux);
+  lightCharacteristic.writeValue(lightIntensity);
   imuCharacteristic.writeValue(imuJson);
   
   // Debug output
   Serial.println("=== Sensor Data ===");
   Serial.print("Temperature: "); Serial.print(temperature); Serial.println(" °C");
   Serial.print("Humidity: "); Serial.print(humidity); Serial.println(" %");
-  Serial.print("Air Quality: "); Serial.println(airQuality);
-  Serial.print("Light: "); Serial.print(lux); Serial.println(" lux");
+  Serial.print("Air Quality: "); Serial.print(airQuality); Serial.println(" (simulated)");
+  Serial.print("Light: "); Serial.print(lightIntensity); Serial.println(" (RGB avg)");
   Serial.print("IMU: "); Serial.println(imuJson);
   Serial.println("==================");
 }
