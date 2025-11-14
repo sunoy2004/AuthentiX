@@ -15,13 +15,23 @@ export interface EmbeddingResponse {
 export const usePythonAPI = () => {
   const [loading, setLoading] = useState(false);
 
-  const enrollFace = async (userId: string, imageBlob: Blob): Promise<boolean> => {
+  const enrollFace = async (userId: string, images: Blob | Blob[]): Promise<boolean> => {
     setLoading(true);
+    console.log('[usePythonAPI] enrollFace started for user:', userId);
+    
     try {
       const formData = new FormData();
       formData.append('user_id', userId);
-      formData.append('image', imageBlob);
+      
+      // Handle single or multiple images
+      const imageArray = Array.isArray(images) ? images : [images];
+      console.log(`[usePythonAPI] Uploading ${imageArray.length} image(s)`);
+      
+      imageArray.forEach((imageBlob, index) => {
+        formData.append('images', imageBlob, `face-${index}.jpg`);
+      });
 
+      console.log(`[usePythonAPI] Sending request to ${PYTHON_API_URL}/face/enroll`);
       const response = await fetch(`${PYTHON_API_URL}/face/enroll`, {
         method: 'POST',
         body: formData,
@@ -29,11 +39,14 @@ export const usePythonAPI = () => {
         credentials: 'omit',
       });
 
+      console.log('[usePythonAPI] Response status:', response.status);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data: EmbeddingResponse = await response.json();
+      console.log('[usePythonAPI] Response data:', data);
 
       if (data.success) {
         toast.success('Face enrolled successfully');
@@ -43,7 +56,7 @@ export const usePythonAPI = () => {
         return false;
       }
     } catch (error) {
-      console.error('Face enrollment error:', error);
+      console.error('[usePythonAPI] Face enrollment error:', error);
       toast.error('Failed to connect to face recognition service');
       return false;
     } finally {
@@ -53,20 +66,28 @@ export const usePythonAPI = () => {
 
   const verifyFace = async (userId: string, imageBlob: Blob): Promise<EmbeddingResponse> => {
     setLoading(true);
+    console.log('[usePythonAPI] verifyFace started for user:', userId);
+    
     try {
       const formData = new FormData();
       formData.append('user_id', userId);
-      formData.append('image', imageBlob);
+      formData.append('image', imageBlob, 'face.jpg');
 
+      console.log(`[usePythonAPI] Sending request to ${PYTHON_API_URL}/face/verify`);
       const response = await fetch(`${PYTHON_API_URL}/face/verify`, {
         method: 'POST',
         body: formData,
+        mode: 'cors',
+        credentials: 'omit',
       });
 
+      console.log('[usePythonAPI] Response status:', response.status);
       const data: EmbeddingResponse = await response.json();
+      console.log('[usePythonAPI] Response data:', data);
+      
       return data;
     } catch (error) {
-      console.error('Face verification error:', error);
+      console.error('[usePythonAPI] Face verification error:', error);
       toast.error('Failed to connect to face recognition service');
       return { success: false, message: 'Connection failed' };
     } finally {

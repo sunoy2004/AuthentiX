@@ -95,25 +95,36 @@ async def options_handler(full_path: str):
 @app.post("/face/enroll")
 async def enroll_face(
     user_id: str = Form(...),
-    image: UploadFile = File(...)
+    images: List[UploadFile] = File(...)
 ):
-    """Enroll a new face for a user"""
+    """Enroll a new face for a user with multiple images"""
     try:
         if face_service is None:
             raise HTTPException(status_code=503, detail="Face service not available")
         
-        image_bytes = await image.read()
-        result = await face_service.enroll(user_id, image_bytes)
+        logger.info(f"Enrolling face for user {user_id} with {len(images)} image(s)")
+        
+        # Read all images
+        image_bytes_list = []
+        for img in images:
+            img_bytes = await img.read()
+            image_bytes_list.append(img_bytes)
+            logger.info(f"Received image: {img.filename}, size: {len(img_bytes)} bytes")
+        
+        # Process enrollment with multiple images
+        result = await face_service.enroll_multiple(user_id, image_bytes_list)
         
         # Log to Supabase
         if result.get("success"):
             log_auth_event(user_id, "face", "enrolled", 1.0)
+            logger.info(f"Face enrollment successful for user {user_id}")
         else:
             log_auth_event(user_id, "face", "enrollment_failed", 0.0)
+            logger.warning(f"Face enrollment failed for user {user_id}: {result.get('message')}")
         
         return result
     except Exception as e:
-        logger.error(f"Face enrollment error: {e}")
+        logger.error(f"Face enrollment error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/face/verify")
@@ -126,18 +137,23 @@ async def verify_face(
         if face_service is None:
             raise HTTPException(status_code=503, detail="Face service not available")
         
+        logger.info(f"Verifying face for user {user_id}")
         image_bytes = await image.read()
+        logger.info(f"Received image: {image.filename}, size: {len(image_bytes)} bytes")
+        
         result = await face_service.verify(user_id, image_bytes)
         
         # Log to Supabase
         if result.get("success") and result.get("match"):
             log_auth_event(user_id, "face", "verified", result.get("confidence", 0.0))
+            logger.info(f"Face verification successful for user {user_id}, confidence: {result.get('confidence', 0.0):.3f}")
         else:
             log_auth_event(user_id, "face", "verification_failed", result.get("confidence", 0.0))
+            logger.warning(f"Face verification failed for user {user_id}")
         
         return result
     except Exception as e:
-        logger.error(f"Face verification error: {e}")
+        logger.error(f"Face verification error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 # Voice Authentication Endpoints

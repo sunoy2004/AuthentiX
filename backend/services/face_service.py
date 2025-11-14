@@ -173,8 +173,9 @@ class FaceService:
             return None
     
     async def enroll(self, user_id: str, image_bytes: bytes) -> dict:
-        """Enroll a new face for a user"""
+        """Enroll a new face for a user (single image)"""
         try:
+            logger.info(f"Enrolling face for user {user_id}")
             embedding = self._extract_face_embedding(image_bytes)
             
             if embedding is None:
@@ -200,13 +201,83 @@ class FaceService:
             self._save_labels()
             self._save_embeddings()
             
+            logger.info(f"Face enrolled successfully for user {user_id}, embedding_id: {index_id}")
             return {
                 "success": True,
                 "message": "Face enrolled successfully",
-                "embedding_id": index_id
+                "embedding_id": index_id,
+                "user_id": user_id
             }
             
         except Exception as e:
+            logger.error(f"Enrollment failed: {e}", exc_info=True)
+            return {
+                "success": False,
+                "message": f"Enrollment failed: {str(e)}"
+            }
+    
+    async def enroll_multiple(self, user_id: str, image_bytes_list: list) -> dict:
+        """Enroll a new face for a user with multiple images for better accuracy"""
+        try:
+            logger.info(f"Enrolling face for user {user_id} with {len(image_bytes_list)} image(s)")
+            embeddings = []
+            
+            # Extract embeddings from all images
+            for idx, image_bytes in enumerate(image_bytes_list):
+                logger.info(f"Processing image {idx + 1}/{len(image_bytes_list)}")
+                embedding = self._extract_face_embedding(image_bytes)
+                
+                if embedding is not None:
+                    embeddings.append(embedding)
+                    logger.info(f"Successfully extracted embedding from image {idx + 1}")
+                else:
+                    logger.warning(f"No face detected in image {idx + 1}")
+            
+            if not embeddings:
+                return {
+                    "success": False,
+                    "message": "No faces detected in any of the provided images"
+                }
+            
+            logger.info(f"Successfully extracted {len(embeddings)} embedding(s) from {len(image_bytes_list)} image(s)")
+            
+            # Average all embeddings for better robustness
+            avg_embedding = np.mean(np.stack(embeddings, axis=0), axis=0)
+            # Re-normalize after averaging
+            avg_embedding = avg_embedding / np.linalg.norm(avg_embedding)
+            avg_embedding = avg_embedding.astype('float32')
+            
+            # Add to FAISS index
+            embedding_reshaped = avg_embedding.reshape(1, -1)
+            index_id = self.index.ntotal
+            self.index.add(embedding_reshaped)
+            
+            # Store label and all individual embeddings
+            self.labels[index_id] = user_id
+            
+            if user_id not in self.embeddings:
+                self.embeddings[user_id] = []
+            # Store both individual embeddings and the averaged one
+            self.embeddings[user_id].extend(embeddings)
+            self.embeddings[user_id].append(avg_embedding)
+            
+            # Save to disk
+            self._save_index()
+            self._save_labels()
+            self._save_embeddings()
+            
+            logger.info(f"Face enrolled successfully for user {user_id}, embedding_id: {index_id}, used {len(embeddings)} images")
+            return {
+                "success": True,
+                "message": f"Face enrolled successfully using {len(embeddings)} image(s)",
+                "embedding_id": index_id,
+                "user_id": user_id,
+                "images_used": len(embeddings),
+                "score": 1.0
+            }
+            
+        except Exception as e:
+            logger.error(f"Multiple enrollment failed: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"Enrollment failed: {str(e)}"
