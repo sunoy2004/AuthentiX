@@ -1,73 +1,282 @@
-# Welcome to your Lovable project
+# ✨ **AuthentiX** — Next-Generation Multi-Modal Biometric Authentication
 
-## Project info
+### **Face ID • Voice Recognition • Gesture Verification • IoT Sensor Integration • FAISS-Powered**
 
-**URL**: https://lovable.dev/projects/2b475f72-f0a8-41d9-98e8-182742e1d83c
+AuthentiX is a cutting-edge multi-factor biometric authentication platform that combines **face recognition**, **voice authentication**, **gesture pattern analysis**, and **IoT sensor data** into a single seamless user experience.
+Built for modern security applications, AuthentiX uses **FAISS-based similarity search**, **deep learning embeddings**, and **real-time BLE sensor streaming** to deliver truly **next-gen authentication**.
 
-## How can I edit this code?
+<div align="center">
+  <img src="https://img.shields.io/badge/AI-Powered-blueviolet?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/FAISS-Integrated-0099ff?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Voice%20Recognition-ECAPA--TDNN-orange?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Face%20Recognition-ArcFace-green?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/IoT-BLE%20Sensors-yellow?style=for-the-badge"/>
+</div>
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+# 🚀 **Features**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2b475f72-f0a8-41d9-98e8-182742e1d83c) and start prompting.
+### 🔹 **1. Multi-Modal Authentication**
 
-Changes made via Lovable will be committed automatically to this repo.
+AuthentiX supports four parallel authentication modes:
 
-**Use your preferred IDE**
+* **Face Recognition** (ArcFace / FaceNet embeddings)
+* **Voice Authentication** (ECAPA-TDNN/x-vector)
+* **Gesture Pattern Recognition** (LSTM on IMU sensor data)
+* **PIN-based fallback**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+All biometric data is converted into embeddings and matched using **FAISS similarity search**.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+### 🔹 **2. Real-Time Face Preview + Recognition**
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+* Live camera streaming
+* On-device frame preprocessing
+* Backend embedding extraction
+* FAISS-based identity matching
+* Support for multiple face enrollments per user
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 🔹 **3. Voice Enrollment + Verification**
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+* Microphone streaming
+* Audio normalization + MFCC extraction
+* Deep neural network embedding generation
+* FAISS similarity lookup
+
+Perfect for hands-free authentication.
+
+---
+
+### 🔹 **4. Gesture Authentication (IMU → LSTM)**
+
+AuthentiX uses IMU data (accelerometer + gyroscope) to learn user-specific gesture signatures with:
+
+* LSTM-based embedding model
+* Real-time gesture data capture
+* Backend similarity scoring
+
+---
+
+### 🔹 **5. Arduino BLE IoT Sensor Integration**
+
+The dashboard displays real-time sensor data via Bluetooth:
+
+Supported modules:
+
+* 🌡 **DHT22 — Temperature/Humidity**
+* 🌫 **MQ135 — Air Quality**
+* 💡 **BH1750 — Light Intensity**
+* ⚙️ **MPU6050 — IMU**
+
+All streamed via BLE and logged to Supabase.
+
+---
+
+### 🔹 **6. Secure Backend Architecture**
+
+* Python FastAPI backend
+* FAISS for scalable similarity search
+* ONNX/Torch models for embedding extraction
+* Supabase for user data, biometric data & authentication logs
+
+---
+
+### 🔹 **7. Beautiful Modern Frontend**
+
+* ⚛ React + TypeScript
+* 🎨 Tailwind CSS + custom components
+* 🔐 Authentication dashboards
+* 📊 Sensor visualization panels
+
+---
+
+# 🏛 **Project Structure**
+
+```
+AuthentiX/
+├── backend/
+│   ├── services/
+│   │   ├── face_service.py
+│   │   ├── voice_service.py
+│   │   ├── gesture_service.py
+│   ├── main.py
+│   ├── requirements.txt
+│
+├── src/
+│   ├── lib/
+│   │   ├── biometricUtils.ts
+│   ├── components/
+│   ├── hooks/
+│   ├── pages/
+│
+├── arduino/
+│   ├── AuthentiX_BLE.ino
+│
+├── public/
+└── README.md
+```
+
+---
+
+# 🧠 **Tech Stack**
+
+### **Frontend**
+
+* React + TypeScript
+* Tailwind CSS
+* WebRTC Camera Streaming
+* WebBluetooth API
+
+### **Backend**
+
+* Python FastAPI
+* FAISS (IndexFlatL2)
+* ONNX Runtime / PyTorch
+* Librosa (audio preprocessing)
+
+### **Machine Learning**
+
+* ArcFace / FaceNet (Face Embeddings)
+* ECAPA-TDNN / X-Vector (Voice Embeddings)
+* LSTM (Gesture Embeddings)
+
+### **Database**
+
+* Supabase
+
+  * embeddings tables
+  * authentication logs
+  * user metadata
+
+### **IoT**
+
+* Arduino BLE
+* MPU6050, DHT22, MQ135, BH1750
+
+---
+
+# 🧩 **How AuthentiX Works**
+
+### **1️⃣ User Enrollment**
+
+User records:
+
+* Face frames
+* Voice samples
+* Gesture IMU sequences
+* (optional) PIN
+
+Each sample → converted to ML embeddings → stored in **Supabase** → indexed via **FAISS**.
+
+---
+
+### **2️⃣ Authentication Flow**
+
+During login:
+
+1. User selects methods
+2. System captures biometric data
+3. Embeddings generated
+4. FAISS finds nearest match
+5. Confidence score calculated
+6. Supabase logs authentication event
+7. Dashboard shows verification result
+
+---
+
+# 🛠 **Setup Instructions**
+
+### **Backend**
+
+```
+cd backend
+pip install -r requirements.txt
+python main.py
+```
+
+### **Frontend**
+
+```
+cd frontend
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### **Arduino**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Upload `AuthentiX_BLE.ino` using Arduino IDE.
+Ensure BLE is enabled & sensors are wired correctly.
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# 📡 **Environment Variables**
 
-## What technologies are used for this project?
+Create a `.env` file:
 
-This project is built with:
+```
+SUPABASE_URL=
+SUPABASE_KEY=
+MODEL_PATH_FACE=
+MODEL_PATH_VOICE=
+MODEL_PATH_GESTURE=
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+# 📊 Supabase Schema Overview
 
-Simply open [Lovable](https://lovable.dev/projects/2b475f72-f0a8-41d9-98e8-182742e1d83c) and click on Share -> Publish.
+### Biometric Tables:
 
-## Can I connect a custom domain to my Lovable project?
+* `face_embeddings`
+* `voice_embeddings`
+* `gesture_embeddings`
 
-Yes, you can!
+### Logging Table:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+* `auth_logs`
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Sensor Logging:
+
+* `environment_logs`
+
+---
+
+# 📸 **Screenshots**
+
+### ⭐ Landing Page
+
+![Landing](./public/screenshots/landing.png)
+
+### 🔐 Authentication Dashboard
+
+![Dashboard](./public/screenshots/dashboard.png)
+
+---
+
+# 🚀 **Future Extensions**
+
+* WebAuthn integration
+* Gait recognition
+* Thermal camera liveness detection
+* TinyML on-device authentication (ESP32)
+
+---
+
+# 🤝 **Contributing**
+
+Contributions are always welcome!
+Feel free to:
+
+* open issues
+* create PRs
+* suggest new biometric modules
+
+---
+
+# ⭐ **Show Your Support**
+
+If you like this project, consider giving it a **star ⭐** on GitHub — it helps more people discover AuthentiX!
