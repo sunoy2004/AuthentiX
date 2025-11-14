@@ -396,7 +396,6 @@ export const GestureAuth: React.FC<GestureAuthProps> = ({ isOpen, onComplete, on
         </div>
 
         <canvas ref={canvasRef} style={{ display: 'none' }} />
-        </div>
       </DialogContent>
     </Dialog>
   );
