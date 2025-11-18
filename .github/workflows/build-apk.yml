@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Setup Java
@@ -30,44 +30,48 @@ jobs:
         uses: android-actions/setup-android@v2
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npm install @capacitor/cli @capacitor/android
 
       - name: Build web app
         run: npm run build
 
-      - name: Install Capacitor CLI
-        run: npm install @capacitor/cli
+      - name: Initialize Capacitor
+        run: |
+          npx cap init
+          npx cap add android
+          npx cap copy
+          npx cap sync
 
-      - name: Add Android platform
-        run: npx cap add android
-
-      - name: Copy assets
-        run: npx cap copy
-
-      - name: Sync project
-        run: npx cap sync
-
-      - name: Build APK
+      - name: Set up Gradle Wrapper Permissions
         run: |
           cd android
-          ./gradlew assembleRelease
+          chmod +x gradlew
 
-      - name: Sign APK
-        uses: ilharp/sign-android-release@v1
-        id: sign_app
-        with:
-          releaseDir: android/app/build/outputs/apk/release
-          signingKey: ${{ secrets.ANDROID_SIGNING_KEY }}
-          keyAlias: ${{ secrets.ANDROID_KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      - name: Build Debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Find APK file
+        id: find_apk
+        run: |
+          cd android
+          if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
+            echo "apk_file=app/build/outputs/apk/debug/app-debug.apk" >> $GITHUB_OUTPUT
+            echo "Found APK: app/build/outputs/apk/debug/app-debug.apk"
+          else
+            echo "No debug APK found"
+            exit 1
+          fi
 
       - name: Create Release
         uses: actions/create-release@v1
         id: create_release
         with:
-          tag_name: v${{ github.run_number }}
-          release_name: Release v${{ github.run_number }}
+          tag_name: v${{ github.run_number }}.${{ github.run_attempt }}
+          release_name: Release v${{ github.run_number }}.${{ github.run_attempt }}
           draft: false
           prerelease: false
         env:
@@ -77,7 +81,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.sign_app.outputs.signedFile }}
+          asset_path: android/${{ steps.find_apk.outputs.apk_file }}
           asset_name: authentix-mobile.apk
           asset_content_type: application/vnd.android.package-archive
         env:
