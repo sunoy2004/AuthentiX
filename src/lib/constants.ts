@@ -1,0 +1,24 @@
+// BLE Service and Characteristic UUIDs
+export const BLE_SERVICE_UUID = '19B10000-E8F2-537E-4F6C-D104768A1214';
+
+// Sensor Characteristic UUIDs
+export const CHARACTERISTIC_UUIDS = {
+  TEMPERATURE: '19B10001-E8F2-537E-4F6C-D104768A1214',
+  HUMIDITY: '19B10002-E8F2-537E-4F6C-D104768A1214',
+  AIR_QUALITY: '19B10003-E8F2-537E-4F6C-D104768A1214',
+  LIGHT: '19B10004-E8F2-537E-4F6C-D104768A1214',
+  IMU: '19B10005-E8F2-537E-4F6C-D104768A1214'
+};
+
+// Supabase Configuration
+export const SUPABASE_CONFIG = {
+  URL: 'https://oygijeabsjjbiwxoujuu.supabase.co',
+  ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95Z2lqZWFic2pqYml3eG91anV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI3NTY3NDgsImV4cCI6MjA3ODMzMjc0OH0.VpJYfov5U0aN3ExhLAgHMmJpBVjwcwcU983p4mbCoAM'
+};
+
+// App Constants
+export const APP_NAME = 'AuthentiX';
+export const APP_THEME_OPTIONS = {
+  LIGHT: 'light',
+  DARK: 'dark'
+};
